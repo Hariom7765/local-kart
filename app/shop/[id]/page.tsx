@@ -255,11 +255,13 @@ export default function ShopProfilePage({
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
+                id={product.id}
                 name={product.name}
                 category={product.category}
                 price={product.price}
                 inStock={product.inStock}
                 imageUrl={product.imageUrl}
+                shopId={shop.id}
                 shopName={shop.name}
                 shopPhone={shop.phone}
               />
