@@ -26,28 +26,63 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { shopId, name, category, price, inStock, stockQuantity, description, imageUrl } = body;
+    let { shopId, name, category, price, inStock, stockQuantity, description, imageUrl, shopName, shopAddress, shopPhone } = body;
 
-    if (!shopId || !name || !category || price === undefined) {
+    if (!name || !category || price === undefined) {
       return NextResponse.json(
-        { error: 'shopId, name, category, and price are required' },
+        { error: 'Product name, category, and price are required fields.' },
         { status: 400 }
       );
     }
 
-    const parsedStock = stockQuantity !== undefined ? parseInt(stockQuantity, 10) : 10;
-    const isStockAvailable = inStock !== undefined ? Boolean(inStock) : parsedStock > 0;
+    // Auto-resolve or create shop if shopId is missing or invalid
+    let validShopId = shopId;
+    if (validShopId) {
+      const existing = await prisma.shop.findUnique({ where: { id: validShopId } });
+      if (!existing) validShopId = null;
+    }
+
+    if (!validShopId) {
+      // Find any shop by shopName or grab first shop
+      let targetShop = null;
+      if (shopName) {
+        targetShop = await prisma.shop.findFirst({ where: { name: shopName } });
+      }
+      if (!targetShop) {
+        targetShop = await prisma.shop.findFirst();
+      }
+
+      if (!targetShop) {
+        // Automatically create a default shop instance
+        targetShop = await prisma.shop.create({
+          data: {
+            name: shopName || 'My Retail Store',
+            category: category || 'Kirana',
+            address: shopAddress || 'Local Market',
+            phone: shopPhone || '+91 9876543210',
+            latitude: 28.6139,
+            longitude: 77.2090,
+            isVerified: true,
+            isPromoted: false,
+          },
+        });
+      }
+      validShopId = targetShop.id;
+    }
+
+    const parsedStock = stockQuantity !== undefined && stockQuantity !== null ? parseInt(String(stockQuantity), 10) : 10;
+    const isStockAvailable = inStock !== undefined ? Boolean(inStock) : (isNaN(parsedStock) ? 10 : parsedStock) > 0;
 
     const newProduct = await prisma.product.create({
       data: {
-        shopId,
-        name,
-        category,
-        price: parseFloat(price),
+        shopId: validShopId,
+        name: String(name).trim(),
+        category: String(category).trim(),
+        price: parseFloat(String(price)),
         inStock: isStockAvailable,
-        stockQuantity: parsedStock,
-        description: description || null,
-        imageUrl: imageUrl || null,
+        stockQuantity: isNaN(parsedStock) ? 10 : parsedStock,
+        description: description ? String(description).trim() : null,
+        imageUrl: imageUrl ? String(imageUrl).trim() : null,
       },
     });
 

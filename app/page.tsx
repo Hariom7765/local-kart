@@ -19,10 +19,14 @@ import {
 
 interface Product {
   id: string;
+  shopId?: string;
   name: string;
   category: string;
   price: number;
   inStock: boolean;
+  stockQuantity?: number;
+  description?: string | null;
+  imageUrl?: string | null;
 }
 
 interface Shop {
@@ -52,9 +56,10 @@ export default function HomePage() {
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [geoMessage, setGeoMessage] = useState('');
 
-  // Fetch Shops
+  // Fetch Shops & Merge Local Inventory
   const fetchShops = async () => {
     setLoading(true);
+    let fetchedShops: Shop[] = [];
     try {
       const url = new URL('/api/shops', window.location.origin);
       if (searchQuery) url.searchParams.set('q', searchQuery);
@@ -64,14 +69,48 @@ export default function HomePage() {
 
       const res = await fetch(url.toString());
       if (res.ok) {
-        const data = await res.json();
-        setShops(data);
+        fetchedShops = await res.json();
       }
     } catch (error) {
       console.error('Failed to fetch shops:', error);
-    } finally {
-      setLoading(false);
     }
+
+    // Merge locally published products from localStorage
+    try {
+      const savedProds = localStorage.getItem('user_inventory_products');
+      if (savedProds) {
+        const localProds: Product[] = JSON.parse(savedProds);
+        if (localProds.length > 0) {
+          // Check if a matching shop exists or create client-side shop entry
+          let targetShop = fetchedShops.find((s) => s.id === localProds[0].shopId || s.name === 'My Retail Store');
+          if (!targetShop) {
+            targetShop = {
+              id: localProds[0].shopId || 'shop-auto-1',
+              name: 'My Retail Store',
+              category: localProds[0].category || 'Kirana',
+              address: 'Local Market',
+              phone: '+91 9876543210',
+              latitude: 28.6139,
+              longitude: 77.2090,
+              isVerified: true,
+              isPromoted: true,
+              products: [],
+            };
+            fetchedShops = [targetShop, ...fetchedShops];
+          }
+
+          // Prepend local products into target shop's products list
+          const existingProdIds = new Set((targetShop.products || []).map((p) => p.id));
+          const toAdd = localProds.filter((p) => !existingProdIds.has(p.id));
+          targetShop.products = [...toAdd, ...(targetShop.products || [])];
+        }
+      }
+    } catch (e) {
+      console.error('Error merging local inventory into home page:', e);
+    }
+
+    setShops(fetchedShops);
+    setLoading(false);
   };
 
   useEffect(() => {
