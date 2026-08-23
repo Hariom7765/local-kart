@@ -163,6 +163,52 @@ export default function OnboardingPage() {
     try {
       localStorage.setItem('local_kart_user_profile', JSON.stringify(profilePayload));
       localStorage.setItem('local_kart_profile_complete', 'true');
+
+      // Append/update user in localcart_users array
+      let savedUsers: any[] = [];
+      const usersStr = localStorage.getItem('localcart_users');
+      if (usersStr) savedUsers = JSON.parse(usersStr);
+
+      const userRecord = {
+        id: 'usr-' + Date.now(),
+        name: profilePayload.name,
+        dob: profilePayload.dob,
+        age: profilePayload.age,
+        role: profilePayload.role,
+        isProfileComplete: true,
+        shopName: profilePayload.shopName,
+        shopCategory: profilePayload.shopCategory,
+        shopAddress: profilePayload.shopAddress,
+        createdAt: new Date().toISOString(),
+      };
+
+      savedUsers = [userRecord, ...savedUsers.filter((u) => u.name !== userRecord.name)];
+      localStorage.setItem('localcart_users', JSON.stringify(savedUsers));
+
+      // If shopkeeper, create & append shop to localcart_shops
+      if (role === 'shopkeeper' && shopName.trim()) {
+        let savedShops: any[] = [];
+        const shopsStr = localStorage.getItem('localcart_shops');
+        if (shopsStr) savedShops = JSON.parse(shopsStr);
+
+        const shopRecord = {
+          id: 'shop-' + Date.now(),
+          name: shopName.trim(),
+          category: shopCategory || 'Kirana',
+          address: shopAddress.trim() || 'Local Market',
+          phone: '+91 9876543210',
+          latitude: 28.6139,
+          longitude: 77.2090,
+          isVerified: true,
+          isPromoted: false,
+          products: [],
+          createdAt: new Date().toISOString(),
+        };
+
+        savedShops = [shopRecord, ...savedShops.filter((s) => s.name !== shopRecord.name)];
+        localStorage.setItem('localcart_shops', JSON.stringify(savedShops));
+        localStorage.setItem('local_kart_user_shop', JSON.stringify(shopRecord));
+      }
     } catch (e) {
       console.error('Failed to write profile to localStorage:', e);
     }

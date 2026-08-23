@@ -224,6 +224,7 @@ export default function ShopkeeperDashboardPage() {
         savedLocal = [newProd, ...savedLocal];
       }
       localStorage.setItem('user_inventory_products', JSON.stringify(savedLocal));
+      localStorage.setItem('localcart_products', JSON.stringify(savedLocal));
     } catch (err) {
       console.error('Error writing product to localStorage:', err);
     }

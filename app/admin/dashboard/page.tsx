@@ -88,9 +88,13 @@ export default function AdminDashboardPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Fetch initial dashboard data
+  // Fetch initial dashboard data & merge with persistent local storage keys
   const loadData = async () => {
     setLoading(true);
+    let fetchedShops: Shop[] = [];
+    let fetchedProducts: Product[] = [];
+    let fetchedUsers: UserProfile[] = [];
+
     try {
       const [shopsRes, prodRes, usersRes] = await Promise.all([
         fetch('/api/shops'),
@@ -99,24 +103,105 @@ export default function AdminDashboardPage() {
       ]);
 
       if (shopsRes.ok) {
-        const shopsData = await shopsRes.json();
-        setShops(shopsData);
+        fetchedShops = await shopsRes.json();
       }
 
       if (prodRes.ok) {
-        const prodData = await prodRes.json();
-        setProducts(prodData);
+        fetchedProducts = await prodRes.json();
       }
 
       if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setRegisteredUsers(usersData);
+        fetchedUsers = await usersRes.json();
       }
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
-    } finally {
-      setLoading(false);
+      console.error('Error loading dashboard data from API:', err);
     }
+
+    // Merge persistent client storage records
+    try {
+      // 1. Merge Local Shops
+      let localShops: Shop[] = [];
+      const lShopsStr = localStorage.getItem('localcart_shops');
+      if (lShopsStr) localShops = JSON.parse(lShopsStr);
+
+      const userShopStr = localStorage.getItem('local_kart_user_shop');
+      if (userShopStr) {
+        const uShop = JSON.parse(userShopStr);
+        if (uShop && uShop.name) localShops.unshift(uShop);
+      }
+
+      const shopMap = new Map<string, Shop>();
+      fetchedShops.forEach((s) => shopMap.set(s.id, s));
+      localShops.forEach((s) => {
+        if (!shopMap.has(s.id)) {
+          // If a shop with same name exists, don't duplicate
+          const existsByName = Array.from(shopMap.values()).some((ex) => ex.name === s.name);
+          if (!existsByName) {
+            shopMap.set(s.id, s);
+          }
+        }
+      });
+      fetchedShops = Array.from(shopMap.values());
+
+      // 2. Merge Local Products
+      let localProds: Product[] = [];
+      const lProdsStr = localStorage.getItem('localcart_products');
+      if (lProdsStr) localProds = JSON.parse(lProdsStr);
+
+      const uProdsStr = localStorage.getItem('user_inventory_products');
+      if (uProdsStr) {
+        const uProds = JSON.parse(uProdsStr);
+        localProds = [...uProds, ...localProds];
+      }
+
+      const prodMap = new Map<string, Product>();
+      fetchedProducts.forEach((p) => prodMap.set(p.id, p));
+      localProds.forEach((p) => prodMap.set(p.id, p));
+      fetchedProducts = Array.from(prodMap.values());
+
+      // 3. Merge Local Users
+      let localUsers: UserProfile[] = [];
+      const lUsersStr = localStorage.getItem('localcart_users');
+      if (lUsersStr) localUsers = JSON.parse(lUsersStr);
+
+      const uProfileStr = localStorage.getItem('local_kart_user_profile');
+      if (uProfileStr) {
+        const uProf = JSON.parse(uProfileStr);
+        if (uProf && uProf.name) {
+          localUsers.unshift({
+            id: 'usr-' + (uProf.name || 'local'),
+            name: uProf.name,
+            dob: uProf.dob || null,
+            age: uProf.age || null,
+            role: uProf.role || 'customer',
+            isProfileComplete: true,
+            shopName: uProf.shopName || null,
+            shopCategory: uProf.shopCategory || null,
+            shopAddress: uProf.shopAddress || null,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      const userMap = new Map<string, UserProfile>();
+      fetchedUsers.forEach((u) => userMap.set(u.id, u));
+      localUsers.forEach((u) => {
+        if (!userMap.has(u.id)) {
+          const existsByName = Array.from(userMap.values()).some((ex) => ex.name === u.name);
+          if (!existsByName) {
+            userMap.set(u.id, u);
+          }
+        }
+      });
+      fetchedUsers = Array.from(userMap.values());
+    } catch (e) {
+      console.error('Error merging client storage records into Admin Dashboard:', e);
+    }
+
+    setShops(fetchedShops);
+    setProducts(fetchedProducts);
+    setRegisteredUsers(fetchedUsers);
+    setLoading(false);
   };
 
   useEffect(() => {
