@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Lock, User, KeyRound, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Lock, User, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminLoginPage() {
@@ -37,12 +37,6 @@ export default function AdminLoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemo = () => {
-    setUsername('hariom7765');
-    setPassword('admin');
-    setError('');
   };
 
   return (
@@ -84,7 +78,7 @@ export default function AdminLoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="hariom7765"
+                placeholder="Enter username"
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none"
               />
             </div>
@@ -115,26 +109,6 @@ export default function AdminLoginPage() {
             {loading ? 'Authenticating...' : 'Sign In as Admin'}
           </button>
         </form>
-
-        {/* DEMO HELPER BOX */}
-        <div className="pt-4 border-t border-slate-800 text-center space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
-            <div className="text-left">
-              <p className="font-semibold text-slate-300">Required Admin Credentials:</p>
-              <p className="text-[11px] text-slate-400">
-                User: <code className="text-emerald-400 font-mono">hariom7765</code> | Pass:{' '}
-                <code className="text-emerald-400 font-mono">admin</code>
-              </p>
-            </div>
-            <button
-              onClick={handleFillDemo}
-              type="button"
-              className="inline-flex items-center gap-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors"
-            >
-              <KeyRound className="w-3 h-3" /> Auto-Fill
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
