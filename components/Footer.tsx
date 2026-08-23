@@ -36,9 +36,6 @@ export function Footer() {
           <ul className="space-y-2 text-xs">
             <li><Link href="/admin/login" className="hover:text-emerald-400 transition-colors">Admin Login</Link></li>
             <li><Link href="/admin/dashboard" className="hover:text-emerald-400 transition-colors">Shop & Inventory Portal</Link></li>
-            <li className="pt-2 text-[11px] text-slate-500">
-              Credentials: <span className="text-emerald-400">hariom7765</span> / <span className="text-emerald-400">admin</span>
-            </li>
           </ul>
         </div>
       </div>
