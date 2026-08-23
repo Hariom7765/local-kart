@@ -10,6 +10,13 @@ export function OnboardingCheck() {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Check if profile was already completed locally
+    try {
+      if (typeof window !== 'undefined' && localStorage.getItem('local_kart_profile_complete') === 'true') {
+        return;
+      }
+    } catch (_) {}
+
     // Only check if authenticated and not already on the onboarding page
     if (status === 'authenticated' && session?.user && pathname !== '/onboarding') {
       const user = session.user as any;
@@ -19,12 +26,14 @@ export function OnboardingCheck() {
 
       // Check if profile is incomplete
       if (user.isProfileComplete === false) {
-        // Double check against API in case session is slightly stale
         fetch('/api/user/profile')
           .then((res) => res.json())
           .then((data) => {
             if (data && data.isProfileComplete === false) {
-              router.push('/onboarding');
+              // Check again before pushing
+              if (localStorage.getItem('local_kart_profile_complete') !== 'true') {
+                router.push('/onboarding');
+              }
             }
           })
           .catch((err) => {

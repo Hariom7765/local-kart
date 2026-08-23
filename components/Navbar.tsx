@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { Store, ShieldCheck, User, LogOut, Sparkles, MapPin, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CustomerAuthModal } from './CustomerAuthModal';
 import { OnboardingCheck } from './OnboardingCheck';
 
@@ -11,9 +11,19 @@ export function Navbar() {
   const { data: session } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [localProfile, setLocalProfile] = useState<{ name?: string; role?: string } | null>(null);
 
-  const userRole = (session?.user as any)?.role || 'customer';
-  const userName = session?.user?.name || session?.user?.email || 'User';
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('local_kart_user_profile');
+      if (saved) {
+        setLocalProfile(JSON.parse(saved));
+      }
+    } catch (_) {}
+  }, [session]);
+
+  const userRole = localProfile?.role || (session?.user as any)?.role || 'customer';
+  const userName = localProfile?.name || session?.user?.name || session?.user?.email || 'User';
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-lg">
