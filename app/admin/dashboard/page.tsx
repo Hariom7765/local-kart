@@ -20,6 +20,12 @@ import {
   Laptop,
   Shirt,
   Search,
+  Users,
+  User,
+  Calendar,
+  Mail,
+  Phone,
+  Tag,
 } from 'lucide-react';
 
 interface Product {
@@ -49,12 +55,30 @@ interface Shop {
   products: Product[];
 }
 
+interface UserProfile {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  name?: string | null;
+  age?: number | null;
+  dob?: string | null;
+  role: string;
+  isProfileComplete: boolean;
+  shopName?: string | null;
+  shopCategory?: string | null;
+  shopAddress?: string | null;
+  createdAt: string;
+}
+
 export default function AdminDashboardPage() {
   const { data: session } = useSession();
   const [shops, setShops] = useState<Shop[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'shops' | 'products'>('shops');
+
+  const [activeTab, setActiveTab] = useState<'shops' | 'products' | 'users'>('shops');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'customer' | 'shopkeeper'>('all');
   const [query, setQuery] = useState('');
 
   // Modals state
@@ -68,9 +92,10 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [shopsRes, prodRes] = await Promise.all([
+      const [shopsRes, prodRes, usersRes] = await Promise.all([
         fetch('/api/shops'),
         fetch('/api/products'),
+        fetch('/api/admin/users'),
       ]);
 
       if (shopsRes.ok) {
@@ -81,6 +106,11 @@ export default function AdminDashboardPage() {
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         setProducts(prodData);
+      }
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setRegisteredUsers(usersData);
       }
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -97,7 +127,7 @@ export default function AdminDashboardPage() {
   const totalShops = shops.length;
   const totalProducts = products.length;
   const totalPromoted = shops.filter((s) => s.isPromoted).length;
-  const totalVerified = shops.filter((s) => s.isVerified).length;
+  const totalUsers = registeredUsers.length;
 
   // Toggle Shop Promoted Status Inline
   const handleTogglePromoted = async (shop: Shop) => {
@@ -175,7 +205,6 @@ export default function AdminDashboardPage() {
   };
 
   // Save Shop (Create or Edit)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSaveShop = async (shopData: any) => {
     const isEdit = Boolean(shopData.id);
     const url = isEdit ? `/api/shops/${shopData.id}` : '/api/shops';
@@ -195,7 +224,6 @@ export default function AdminDashboardPage() {
   };
 
   // Save Product (Create or Edit)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSaveProduct = async (productData: any) => {
     const isEdit = Boolean(productData.id);
     const url = isEdit ? `/api/products/${productData.id}` : '/api/products';
@@ -226,6 +254,24 @@ export default function AdminDashboardPage() {
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       p.category.toLowerCase().includes(query.toLowerCase())
   );
+
+  const filteredUsers = registeredUsers.filter((u) => {
+    const matchesRole =
+      userRoleFilter === 'all' ||
+      (userRoleFilter === 'customer' && u.role === 'customer') ||
+      (userRoleFilter === 'shopkeeper' && u.role === 'shopkeeper');
+
+    const searchLower = query.toLowerCase();
+    const matchesQuery =
+      !query ||
+      (u.name && u.name.toLowerCase().includes(searchLower)) ||
+      (u.email && u.email.toLowerCase().includes(searchLower)) ||
+      (u.phone && u.phone.toLowerCase().includes(searchLower)) ||
+      (u.role && u.role.toLowerCase().includes(searchLower)) ||
+      (u.shopName && u.shopName.toLowerCase().includes(searchLower));
+
+    return matchesRole && matchesQuery;
+  });
 
   return (
     <div className="min-h-screen pb-16 bg-slate-950">
@@ -298,22 +344,22 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex items-center gap-4 shadow-lg">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-400">Registered Users</p>
+              <p className="text-2xl font-black text-slate-100">{totalUsers}</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex items-center gap-4 shadow-lg">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
               <p className="text-xs font-medium text-slate-400">Featured Listings</p>
               <p className="text-2xl font-black text-slate-100">{totalPromoted}</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex items-center gap-4 shadow-lg">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
-              <BadgeCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-400">Verified Stores</p>
-              <p className="text-2xl font-black text-slate-100">{totalVerified}</p>
             </div>
           </div>
         </div>
@@ -342,6 +388,17 @@ export default function AdminDashboardPage() {
             >
               <Package className="w-4 h-4" /> Products ({products.length})
             </button>
+
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'users'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-4 h-4" /> Users & Shopkeepers ({registeredUsers.length})
+            </button>
           </div>
 
           <div className="relative">
@@ -350,7 +407,7 @@ export default function AdminDashboardPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Filter ${activeTab}...`}
+              placeholder={`Search ${activeTab}...`}
               className="bg-slate-900 border border-slate-800 focus:border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none w-full sm:w-64"
             />
           </div>
@@ -447,7 +504,7 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'products' ? (
           /* PRODUCTS TABLE */
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
@@ -516,6 +573,153 @@ export default function AdminDashboardPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          /* USERS & SHOPKEEPERS TABLE */
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl space-y-4">
+            {/* Filter Tabs Header */}
+            <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setUserRoleFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    userRoleFilter === 'all'
+                      ? 'bg-slate-800 text-slate-100 border border-slate-700'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  All Users ({registeredUsers.length})
+                </button>
+                <button
+                  onClick={() => setUserRoleFilter('customer')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    userRoleFilter === 'customer'
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Customers Only ({registeredUsers.filter((u) => u.role === 'customer').length})
+                </button>
+                <button
+                  onClick={() => setUserRoleFilter('shopkeeper')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    userRoleFilter === 'shopkeeper'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Shopkeepers Only ({registeredUsers.filter((u) => u.role === 'shopkeeper').length})
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="p-4">Name & Contact</th>
+                    <th className="p-4">Age & DOB</th>
+                    <th className="p-4 text-center">Role Badge</th>
+                    <th className="p-4">Assigned Shop Details</th>
+                    <th className="p-4 text-right">Joined Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                        No registered users found matching the filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-slate-800/40 transition-colors">
+                        {/* Name & Contact */}
+                        <td className="p-4">
+                          <div className="font-bold text-slate-100 flex items-center gap-2">
+                            <User className="w-4 h-4 text-slate-400" />
+                            <span>{user.name || 'Anonymous User'}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex flex-col gap-0.5">
+                            {user.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="w-3 h-3 text-slate-500" /> {user.email}
+                              </span>
+                            )}
+                            {user.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-slate-500" /> {user.phone}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Age & DOB */}
+                        <td className="p-4">
+                          <div className="font-semibold text-slate-200">
+                            {user.age ? `${user.age} yrs` : 'N/A'}
+                          </div>
+                          {user.dob && (
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Calendar className="w-3 h-3 text-slate-500" /> {user.dob}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Role Badge */}
+                        <td className="p-4 text-center">
+                          {user.role === 'shopkeeper' ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-[11px]">
+                              <Store className="w-3.5 h-3.5" />
+                              <span>Shopkeeper</span>
+                            </span>
+                          ) : user.role === 'admin' ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold text-[11px]">
+                              <BadgeCheck className="w-3.5 h-3.5" />
+                              <span>Admin</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-bold text-[11px]">
+                              <User className="w-3.5 h-3.5" />
+                              <span>Customer</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Assigned Shop Details */}
+                        <td className="p-4">
+                          {user.role === 'shopkeeper' && user.shopName ? (
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-slate-100 flex items-center gap-1.5">
+                                <Store className="w-3.5 h-3.5 text-emerald-400" />
+                                {user.shopName}
+                              </p>
+                              {user.shopCategory && (
+                                <p className="text-[11px] text-emerald-400 font-medium">
+                                  Category: {user.shopCategory}
+                                </p>
+                              )}
+                              {user.shopAddress && (
+                                <p className="text-[11px] text-slate-400 truncate max-w-xs">
+                                  {user.shopAddress}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 text-[11px]">None (Consumer Account)</span>
+                          )}
+                        </td>
+
+                        {/* Joined Date */}
+                        <td className="p-4 text-right font-mono text-[11px] text-slate-400">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

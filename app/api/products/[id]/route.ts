@@ -41,6 +41,8 @@ export async function PATCH(
         ...(body.category !== undefined && { category: body.category }),
         ...(body.price !== undefined && { price: parseFloat(body.price) }),
         ...(body.inStock !== undefined && { inStock: Boolean(body.inStock) }),
+        ...(body.stockQuantity !== undefined && { stockQuantity: parseInt(body.stockQuantity, 10) }),
+        ...(body.description !== undefined && { description: body.description }),
         ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
         ...(body.shopId !== undefined && { shopId: body.shopId }),
       },

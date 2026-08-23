@@ -9,6 +9,8 @@ interface ProductCardProps {
   category: string;
   price: number;
   inStock: boolean;
+  stockQuantity?: number;
+  description?: string | null;
   imageUrl?: string | null;
   shopId: string;
   shopName: string;
@@ -21,6 +23,8 @@ export function ProductCard({
   category,
   price,
   inStock,
+  stockQuantity,
+  description,
   imageUrl,
   shopId,
   shopName,
@@ -30,6 +34,8 @@ export function ProductCard({
   const cleanPhone = shopPhone.replace(/[^0-9]/g, '');
   const whatsappMsg = `Hi ${shopName}, I am checking availability for "${name}" (₹${price}) listed on Local Cart AI.`;
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMsg)}`;
+
+  const isLowStock = stockQuantity !== undefined && stockQuantity > 0 && stockQuantity < 5;
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -64,14 +70,18 @@ export function ProductCard({
           )}
 
           {/* Stock Badge Overlay */}
-          <div className="absolute top-2 right-2">
-            {inStock ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/90 text-slate-950 backdrop-blur-sm shadow-md">
-                <CheckCircle2 className="w-3 h-3" /> In Stock
-              </span>
-            ) : (
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+            {!inStock ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/90 text-white backdrop-blur-sm shadow-md">
                 <XCircle className="w-3 h-3" /> Out of Stock
+              </span>
+            ) : isLowStock ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-slate-950 backdrop-blur-sm shadow-md animate-pulse">
+                Low Stock ({stockQuantity} left)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/90 text-slate-950 backdrop-blur-sm shadow-md">
+                <CheckCircle2 className="w-3 h-3" /> In Stock
               </span>
             )}
           </div>
@@ -82,10 +92,15 @@ export function ProductCard({
           {category}
         </span>
 
-        {/* Product Name */}
+        {/* Product Name & Description */}
         <h4 className="font-semibold text-slate-100 text-sm mt-0.5 line-clamp-2 leading-snug">
           {name}
         </h4>
+        {description && (
+          <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+            {description}
+          </p>
+        )}
       </div>
 
       {/* Price & Actions */}

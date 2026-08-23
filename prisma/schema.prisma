@@ -23,14 +23,33 @@ model Shop {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name        String
-  category    String
-  price       Float
-  inStock     Boolean  @default(true)
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name          String
+  category      String
+  price         Float
+  inStock       Boolean  @default(true)
+  stockQuantity Int      @default(10)
+  description   String?
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
+
+model User {
+  id                String   @id @default(uuid())
+  email             String?  @unique
+  phone             String?  @unique
+  name              String?
+  age               Int?
+  dob               String?
+  role              String   @default("customer")
+  isProfileComplete Boolean  @default(false)
+  shopName          String?
+  shopCategory      String?
+  shopAddress       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+

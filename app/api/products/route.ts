@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { shopId, name, category, price, inStock, imageUrl } = body;
+    const { shopId, name, category, price, inStock, stockQuantity, description, imageUrl } = body;
 
     if (!shopId || !name || !category || price === undefined) {
       return NextResponse.json(
@@ -35,13 +35,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const parsedStock = stockQuantity !== undefined ? parseInt(stockQuantity, 10) : 10;
+    const isStockAvailable = inStock !== undefined ? Boolean(inStock) : parsedStock > 0;
+
     const newProduct = await prisma.product.create({
       data: {
         shopId,
         name,
         category,
         price: parseFloat(price),
-        inStock: inStock !== undefined ? Boolean(inStock) : true,
+        inStock: isStockAvailable,
+        stockQuantity: parsedStock,
+        description: description || null,
         imageUrl: imageUrl || null,
       },
     });

@@ -1,6 +1,8 @@
 import NextAuth, { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import { prisma } from '@/lib/prisma';
+
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -54,11 +56,36 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.role = (user as { role?: string }).role || 'customer';
       }
+
+      if (token.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email },
+          });
+          if (dbUser) {
+            token.isProfileComplete = dbUser.isProfileComplete;
+            token.role = dbUser.role;
+            if (dbUser.name) {
+              token.name = dbUser.name;
+            }
+          } else if ((user as { role?: string })?.role === 'admin') {
+            token.isProfileComplete = true;
+          } else {
+            token.isProfileComplete = false;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { role?: string }).role = token.role as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).isProfileComplete = token.isProfileComplete ?? false;
+        if (token.name) {
+          session.user.name = token.name;
+        }
       }
       return session;
     },

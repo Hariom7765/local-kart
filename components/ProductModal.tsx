@@ -15,6 +15,8 @@ interface ProductData {
   category: string;
   price: number | string;
   inStock: boolean;
+  stockQuantity?: number | string;
+  description?: string | null;
   imageUrl?: string | null;
 }
 
@@ -41,6 +43,8 @@ export function ProductModal({
     category: 'Kirana',
     price: '',
     inStock: true,
+    stockQuantity: 10,
+    description: '',
     imageUrl: '',
   });
 
@@ -50,6 +54,8 @@ export function ProductModal({
     if (initialData) {
       setFormData({
         ...initialData,
+        stockQuantity: initialData.stockQuantity ?? 10,
+        description: initialData.description || '',
         imageUrl: initialData.imageUrl || '',
       });
     } else {
@@ -59,6 +65,8 @@ export function ProductModal({
         category: 'Kirana',
         price: '',
         inStock: true,
+        stockQuantity: 10,
+        description: '',
         imageUrl: '',
       });
     }
@@ -166,6 +174,21 @@ export function ProductModal({
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              Stock Quantity *
+            </label>
+            <input
+              type="number"
+              min={0}
+              required
+              value={formData.stockQuantity ?? 10}
+              onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+              placeholder="10"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+            />
           </div>
 
           <div>
