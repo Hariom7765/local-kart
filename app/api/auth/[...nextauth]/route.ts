@@ -25,6 +25,25 @@ export const authOptions: AuthOptions = {
         return null;
       },
     }),
+    CredentialsProvider({
+      id: 'phone-otp',
+      name: 'Phone OTP',
+      credentials: {
+        phoneNumber: { label: 'Phone Number', type: 'text' },
+        firebaseUid: { label: 'Firebase UID', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (credentials?.phoneNumber) {
+          return {
+            id: credentials.firebaseUid || credentials.phoneNumber,
+            name: `Customer (${credentials.phoneNumber})`,
+            email: `${credentials.phoneNumber}@localkart.user`,
+            role: 'customer',
+          };
+        }
+        return null;
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

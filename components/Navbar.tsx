@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { Store, ShieldCheck, User, LogOut, Sparkles, MapPin } from 'lucide-react';
 import { useState } from 'react';
+import { CustomerAuthModal } from './CustomerAuthModal';
 
 export function Navbar() {
   const { data: session } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-lg">
@@ -82,7 +84,7 @@ export function Navbar() {
             </div>
           ) : (
             <button
-              onClick={() => signIn('google')}
+              onClick={() => setShowAuthModal(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-semibold px-3.5 py-1.5 rounded-lg text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <User className="w-4 h-4" />
@@ -91,6 +93,12 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Customer Auth Modal */}
+      <CustomerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </header>
   );
 }
